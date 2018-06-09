@@ -2,6 +2,8 @@
 
 Bingo game made using Elm for learning purpouses.
 
+https://arielger.github.io/elm-bingo/
+
 📝 TODO:
 
 - Organize view functions in different folders
