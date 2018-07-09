@@ -3,11 +3,14 @@ module Main exposing (..)
 import Html
 import Css exposing (..)
 import Random
+import Task exposing (Task)
+import Random
 import Html.Styled exposing (..)
 import Html.Styled.Events exposing (..)
 import Html.Styled.Attributes exposing (css, style)
 import Data.Board exposing ( MainBoard, Ball, activateCurrentBall, getActiveBalls, getInactiveBalls, initialMainBoard, randomBallGenerator )
-import Data.Player exposing (Player, PlayerBoard, playerBoardGenerator)
+import Data.Player exposing (Player, PlayerBoard, getPlayerBoard)
+import Request.Player exposing (fetchPlayerData)
 import Views.Button
 import Views.MainBoard
 import Views.Player
@@ -23,7 +26,10 @@ main =
 
 -- MODEL
 
-type alias Model = { mainBoard: MainBoard, players: List Player }
+type alias Model = {
+  mainBoard: MainBoard,
+  players: List Player
+}
 
 initialModel : Model
 initialModel = {
@@ -34,31 +40,40 @@ initialModel = {
 init : (Model, Cmd Msg)
 init = (initialModel, Cmd.none)
 
-
-
 -- UPDATE
 type Msg
-  = AddPlayer
-  | CreatePlayerBoard PlayerBoard
+  = CreatePlayerClick
+  | GetRandomCharacterId Int
+  | CreatePlayer Player
   | ResetAll
   | GetRandomBall
   | HighlightNewBall Int
 
+createNewPlayer : Int -> Cmd Msg
+createNewPlayer characterId =
+  let
+    createPlayerTask : Task Never Player
+    createPlayerTask = Task.map2
+      (\playerData board -> {
+        board = board,
+        data = playerData
+      })
+      (fetchPlayerData characterId)
+      getPlayerBoard
+  in
+    Task.perform
+      (\player -> CreatePlayer player)
+      createPlayerTask
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    AddPlayer ->
-      (model, Random.generate CreatePlayerBoard playerBoardGenerator)
-    CreatePlayerBoard board ->
-      let
-        newPlayerName = "Player " ++ toString (List.length model.players + 1)
-      in
-        (
-          { model | players =
-              model.players ++ [{ name = newPlayerName, board = board}]
-          },
-          Cmd.none
-        )
+    CreatePlayerClick ->
+      (model, Random.generate GetRandomCharacterId (Random.int 0 493))
+    GetRandomCharacterId id ->
+      (model, createNewPlayer id)
+    CreatePlayer player ->
+      ({ model | players = model.players ++ [player] }, Cmd.none)
     ResetAll ->
       (initialModel, Cmd.none)
     GetRandomBall ->
@@ -101,7 +116,7 @@ view model =
         div
           [ css [ marginTop (px 40) ] ]
           [
-            Views.Button.view [ onClick AddPlayer ] [text "Add player 🕹"],
+            Views.Button.view [ onClick CreatePlayerClick ] [text "Add player 🕹"],
             Views.Button.view [ onClick ResetAll ] [text "Reset game ♻️"],
             Views.Button.view [ onClick GetRandomBall ] [text "Next ball 🎲"]
           ],

@@ -4,22 +4,38 @@ module Data.Player
     PlayerBoard,
     PlayerBoardRow,
     BoardPosition,
-    playerBoardGenerator
+    getPlayerBoard,
+    PlayerData,
+    defaultPlayerData
   )
 
+import Task exposing (Task)
+import RemoteData exposing (WebData)
 import Random exposing (map, generate, int, andThen)
 import Random.List exposing (choose, shuffle)
 import Random.Extra exposing (combine)
 import Data.Board exposing (ballsCount)
+import Utils exposing (randomToTask)
+
+type alias PlayerData = {
+  name: String,
+  image: String
+}
 
 type alias BoardPosition = Maybe Int
 type alias PlayerBoardRow = List BoardPosition
 type alias PlayerBoard = List PlayerBoardRow
 
 type alias Player = {
-  name: String,
-  board: PlayerBoard
+  board: PlayerBoard,
+  data: PlayerData
 }
+
+defaultPlayerData : PlayerData
+defaultPlayerData =
+  { name = "Player"
+  , image = "http://i.pravatar.cc/200"
+  }
 
 split : Int -> List a -> List (List a)
 split i list =
@@ -27,8 +43,8 @@ split i list =
     [] -> []
     listHead -> listHead :: split i (List.drop i list)
 
-playerBoardGenerator : Random.Generator PlayerBoard
-playerBoardGenerator =
+getPlayerBoard : Task Never PlayerBoard
+getPlayerBoard =
   let
     allNumbers = List.map (\a -> Just a) (List.range 1 ballsCount)
     emptyCellsInRow = List.repeat 4 Nothing
@@ -45,4 +61,5 @@ playerBoardGenerator =
       (\ pb -> combine (List.map shuffle pb))
       playerBoard
   in
-    shuffledPlayerBoard
+    randomToTask shuffledPlayerBoard
+

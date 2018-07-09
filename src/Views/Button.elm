@@ -7,6 +7,9 @@ view : List (Attribute msg) -> List (Html msg) -> Html msg
 view =
   styled button
     [
+      display inlineFlex,
+      height (px 60),
+      alignItems center,
       backgroundColor (hex "#FF2E63"),
       border (px 0),
       padding2 (px 16) (px 32),
